@@ -25,8 +25,9 @@ def draw_line(p_list, algorithm):
             k = (y1 - y0) / (x1 - x0)
             for x in range(x0, x1 + 1):
                 result.append((x, int(y0 + k * (x - x0))))
+    # Sept.
     elif algorithm == 'DDA':
-        # TODO: Sep.
+        # TODO: need further modification
         if x0 == x1:
             for y in range(y0, y1 + 1):
                 result.append((x0, y))
@@ -49,7 +50,54 @@ def draw_line(p_list, algorithm):
                     x = int(x + 1.0 / k)
                     result.append((x0, y))
     elif algorithm == 'Bresenham':
-        pass
+        # TODO: need further modification
+        if x0 == x1:
+            for y in range(y0, y1 + 1):
+                result.append((x0, y))
+        else:
+            m = (y1 - y0) / (x1 - x0)
+            if m > 0:
+                incre = 1
+            else:
+                incre = -1
+            if abs(y1 - y0) <= abs(x1 - x0):    # |m|<=1
+                if x0 > x1:
+                    x0, y0, x1, y1 = x1, y1, x0, y0
+                deltax = x1 - x0
+                deltay = y1 - y0
+                p = 2 * deltay - deltax
+                c1 = 2 * deltay
+                c2 = 2 * (deltay - deltax)
+                result.append((x0, y0))
+                y = y0
+                for k in range(1, deltax + 1):  # deltax times
+                    if p < 0:
+                        result.append((x0 + k, y))
+                        p += c1
+                    else:
+                        # p==0, y_{k+1} = y_k +1
+                        y += incre
+                        result.append((x0 + k, y))
+                        p += c2
+            else:
+                if y0 > y1:
+                    x0, y0, x1, y1 = x1, y1, x0, y0
+                deltax = x1 - x0
+                deltay = y1 - y0
+                p = 2 * deltax - deltay
+                c1 = 2 * deltax
+                c2 = 2 * (deltax - deltay)
+                result.append((x0, y0))
+                x = x0
+                for k in range(1, deltay + 1):  # deltay times
+                    if p < 0:
+                        result.append((x, y0 + k))
+                        p += c1
+                    else:
+                        # p==0, x_{k+1} = x_k +1
+                        x += incre
+                        result.append((x, y0 + k))
+                        p += c2
     return result
 
 
