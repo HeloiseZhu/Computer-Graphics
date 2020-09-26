@@ -71,7 +71,7 @@ def draw_line(p_list, algorithm):
                 result.append((x0, y0))
                 y = y0
                 for k in range(1, deltax + 1):  # deltax times
-                    if p < 0:
+                    if (m > 0 and p < 0) or (m < 0 and p > 0):
                         result.append((x0 + k, y))
                         p += c1
                     else:
@@ -90,7 +90,7 @@ def draw_line(p_list, algorithm):
                 result.append((x0, y0))
                 x = x0
                 for k in range(1, deltay + 1):  # deltay times
-                    if p < 0:
+                    if (m > 0 and p < 0) or (m < 0 and p > 0):
                         result.append((x, y0 + k))
                         p += c1
                     else:
