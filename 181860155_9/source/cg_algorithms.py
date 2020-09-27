@@ -124,6 +124,7 @@ def draw_ellipse(p_list):
     x0, y0 = p_list[0]
     x1, y1 = p_list[1]
     result = []
+    # Sept.
     result1 = []
     xc = (x0 + x1) / 2
     yc = (y0 + y1) / 2
