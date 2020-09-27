@@ -145,7 +145,6 @@ def draw_ellipse(p_list):
             x += 1
             y -= 1
             result.append((x, y))
-    
     del result[-1]
     '''
     if len(result) > 0:
