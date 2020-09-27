@@ -8,4 +8,5 @@ setColor 55 100 255
 drawLine 610 200 400 400 250 DDA
 setColor 55 0 255
 drawLine 666 200 390 400 240 Bresenham
+drawEllipse e1 200 400 400 300
 saveCanvas 2

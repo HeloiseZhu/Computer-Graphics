@@ -121,7 +121,75 @@ def draw_ellipse(p_list):
     :param p_list: (list of list of int: [[x0, y0], [x1, y1]]) 椭圆的矩形包围框左上角和右下角顶点坐标
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 绘制结果的像素点坐标列表
     """
-    pass
+    x0, y0 = p_list[0]
+    x1, y1 = p_list[1]
+    result = []
+    result1 = []
+    xc = (x0 + x1) / 2
+    yc = (y0 + y1) / 2
+    rx = (x1 - x0) / 2
+    ry = (y0 - y1) / 2
+    c1 = rx * rx
+    c2 = ry * ry
+    x = 0
+    y = int(ry)
+    result.append((x, y))
+    p = c2 - c1 * ry + c1 / 4
+    while c2 * x < c1 * y:
+        if p < 0:
+            p += (2 * c2 * x + 3 * c2)
+            x += 1
+            result.append((x, y))
+        else:
+            p += (2 * c2 * x - 2 * c1 * y + 2 * c1 + 3 * c2)
+            x += 1
+            y -= 1
+            result.append((x, y))
+    
+    del result[-1]
+    '''
+    if len(result) > 0:
+        x, y = result[-1]
+    else:
+        x = 0
+        y = int(ry)
+    p = c2 * (x + 1 / 2) * (x + 1 / 2) + c1 * (y - 1) * (y - 1) - c1 * c2
+    while y > 0:
+        if p <= 0:
+            p += (-2 * c1 * y + 3 * c1)
+            x += 1
+            y -= 1
+            result.append((x, y))
+        else:
+            p += (2 * c2 * x - 2 * c1 * y + 2 * c2 + 3 * c1)
+            y -= 1
+            result.append((x, y))
+        print("({},{})".format(x, y))
+    '''
+    x = int(rx)
+    y = 0
+    result.append((x, y))
+    p = c1 - c2 * rx + c2 / 4
+    while c2 * x >= c1 * y:
+        if p <= 0:
+            p += (2 * c1 * y + 3 * c1)
+            y += 1
+            result.append((x, y))
+        else:
+            p += (2 * c1 * y - 2 * c2 * x + 2 * c2 + 3 * c1)
+            x -= 1
+            y += 1
+            result.append((x, y))
+    del result[-1]
+        
+    for x, y in result:
+        # TODO: int()?
+        result1.append((int(x + xc), int(y + yc)))
+        result1.append((int(-x + xc), int(y + yc)))
+        result1.append((int(x + xc), int(-y + yc)))
+        result1.append((int(-x + xc), int(-y + yc)))
+
+    return result1
 
 
 def draw_curve(p_list, algorithm):
