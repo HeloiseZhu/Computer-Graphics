@@ -29,12 +29,42 @@
 \dots
 
 \section{算法介绍}
-\subsection{\dots}
+% 已完成或拟采用算法的原理介绍、自己的理解、对比分析等
+\subsection{绘制线段}
+\textbf{要求：}根据给定两点$(x_0,y_0)$和$(x_1,y_1)$绘制线段。
+
+绘制线段共需完成3种算法：Naive算法、DDA算法和Bresenham算法。
+其中Naive算法已提供，9月提交中完成了DDA算法和Bresenham算法。
+
+\textbf{DDA算法}
+
+斜率$m=\frac{y_1-y_0}{x_1-x_0}$，
+若$|m|<=1$，以$x_0<x_1$为例进行说明。
+以单位间隔($\Delta x=1$)对$x$进行采样，并计算对应的$y$值:
+
+$y_{k+1}=y_k+m\;(k=0,1,...)$
+
+若$|m|>1$，以$y_0<y_1$为例进行说明。
+以单位间隔($\Delta y=1$)对$y$进行采样，并计算对应的$x$值:
+
+$x_{k+1}=x_k+\frac{1}{m}\;(k=0,1,...)$
+
+\textbf{Bresenham算法}
+
+将$(x_0,y_0)$作为第一个点，
+计算决策参数的第一个值$p_0=2\Delta y-\Delta x$
+（$\Delta x=x_1-x_0$，$\Delta y=y_1-y_0$）。
+
+若$|m|<=1$，以$x_0<x_1$为例进行说明。
+
+
+\subsection{绘制椭圆}
 \dots
-\subsection{\dots}
-\dots
+
+\subsection{其他}
 		
 \section{系统介绍}
+% 已完成或拟采用的系统框架、交互逻辑、设计思路等
 \dots
 
 \section{总结}
@@ -43,5 +73,10 @@
 \bibliographystyle{plain}%
 %"xxx" should be your citing file's name.
 \bibliography{xxx}
+
+
+
+% 介绍自己系统中的巧妙的设计、额外的功能、易用的交互、优雅的代码、好看的界面等（可选）
+% 注明在实现作业过程中使用的参考资料，包括技术博客等
 
 \end{document}
