@@ -1,0 +1,14 @@
+resetCanvas 600 500
+setColor 0 255 0
+drawLine line1 100 50 500 200 Naive
+saveCanvas 1
+setColor 255 0 0
+drawLine 600 200 400 400 250 Naive
+setColor 55 100 255
+drawLine 610 200 400 400 250 DDA
+setColor 55 0 255
+drawLine 666 200 390 400 240 Bresenham
+drawEllipse e1 200 400 400 300
+drawEllipse e2 200 280 300 80
+drawEllipse e3 310 280 410 180
+saveCanvas 2
