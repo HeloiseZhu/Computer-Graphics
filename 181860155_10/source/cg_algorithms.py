@@ -29,6 +29,8 @@ def draw_line(p_list, algorithm):
     elif algorithm == 'DDA':
         # TODO: need further modification
         if x0 == x1:
+            if y1 < y0:
+                y0, y1 = y1, y0
             for y in range(y0, y1 + 1):
                 result.append((x0, y))
         else:
@@ -52,6 +54,8 @@ def draw_line(p_list, algorithm):
     elif algorithm == 'Bresenham':
         # TODO: need further modification
         if x0 == x1:
+            if y1 < y0:
+                y0, y1 = y1, y0
             for y in range(y0, y1 + 1):
                 result.append((x0, y))
         else:
@@ -71,7 +75,7 @@ def draw_line(p_list, algorithm):
                 result.append((x0, y0))
                 y = y0
                 for k in range(1, deltax + 1):  # deltax times
-                    if (m > 0 and p < 0) or (m < 0 and p > 0):
+                    if (m > 0 and p < 0) or (m < 0 and p > 0):  # ?
                         result.append((x0 + k, y))
                         p += c1
                     else:
@@ -90,7 +94,7 @@ def draw_line(p_list, algorithm):
                 result.append((x0, y0))
                 x = x0
                 for k in range(1, deltay + 1):  # deltay times
-                    if (m > 0 and p < 0) or (m < 0 and p > 0):
+                    if (m > 0 and p < 0) or (m < 0 and p > 0):  # ?
                         result.append((x, y0 + k))
                         p += c1
                     else:
@@ -126,69 +130,36 @@ def draw_ellipse(p_list):
     result = []
     # Sept.
     result1 = []
-    xc = (x0 + x1) / 2
-    yc = (y0 + y1) / 2
-    rx = (x1 - x0) / 2
-    ry = (y0 - y1) / 2
+    xc = int((x0 + x1) / 2)
+    yc = int((y0 + y1) / 2)
+    rx = int((x1 - x0) / 2)
+    ry = int((y0 - y1) / 2)
     c1 = rx * rx
     c2 = ry * ry
+    # 区域1
     x = 0
     y = int(ry)
-    result.append((x, y))
-    p = c2 - c1 * ry + c1 / 4
+    result.append((x, y)) 
     while c2 * x < c1 * y:
-        if p < 0:
-            p += (2 * c2 * x + 3 * c2)
-            x += 1
-            result.append((x, y))
-        else:
-            p += (2 * c2 * x - 2 * c1 * y + 2 * c1 + 3 * c2)
-            x += 1
+        p = c2 * (x + 1) * (x + 1) + c1 * (y - 0.5) * (y - 0.5) - c1 * c2
+        x += 1
+        if p >= 0:
             y -= 1
-            result.append((x, y))
-    del result[-1]
-    '''
-    if len(result) > 0:
-        x, y = result[-1]
-    else:
-        x = 0
-        y = int(ry)
-    p = c2 * (x + 1 / 2) * (x + 1 / 2) + c1 * (y - 1) * (y - 1) - c1 * c2
+        result.append((x, y))
+    # 区域2
     while y > 0:
+        p = c2 * (x + 0.5) * (x + 0.5) + c1 * (y - 1) * (y - 1) - c1 * c2
+        y -= 1
         if p <= 0:
-            p += (-2 * c1 * y + 3 * c1)
             x += 1
-            y -= 1
-            result.append((x, y))
-        else:
-            p += (2 * c2 * x - 2 * c1 * y + 2 * c2 + 3 * c1)
-            y -= 1
-            result.append((x, y))
-        print("({},{})".format(x, y))
-    '''
-    x = int(rx)
-    y = 0
-    result.append((x, y))
-    p = c1 - c2 * rx + c2 / 4
-    while c2 * x >= c1 * y:
-        if p <= 0:
-            p += (2 * c1 * y + 3 * c1)
-            y += 1
-            result.append((x, y))
-        else:
-            p += (2 * c1 * y - 2 * c2 * x + 2 * c2 + 3 * c1)
-            x -= 1
-            y += 1
-            result.append((x, y))
-    del result[-1]
-        
+        result.append((x, y))
+
     for x, y in result:
         # TODO: int()?
-        result1.append((int(x + xc), int(y + yc)))
-        result1.append((int(-x + xc), int(y + yc)))
-        result1.append((int(x + xc), int(-y + yc)))
-        result1.append((int(-x + xc), int(-y + yc)))
-
+        result1.append((x + xc, y + yc))
+        result1.append((-x + xc, y + yc))
+        result1.append((x + xc, -y + yc))
+        result1.append((-x + xc, -y + yc))
     return result1
 
 
