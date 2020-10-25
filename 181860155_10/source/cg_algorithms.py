@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 
 # 本文件只允许依赖math库
-import math
+from math import *
 
 
 def draw_line(p_list, algorithm):
@@ -25,9 +25,7 @@ def draw_line(p_list, algorithm):
             k = (y1 - y0) / (x1 - x0)
             for x in range(x0, x1 + 1):
                 result.append((x, int(y0 + k * (x - x0))))
-    # Sept.
     elif algorithm == 'DDA':
-        # TODO: need further modification
         if x0 == x1:
             if y1 < y0:
                 y0, y1 = y1, y0
@@ -35,22 +33,22 @@ def draw_line(p_list, algorithm):
                 result.append((x0, y))
         else:
             k = (y1 - y0) / (x1 - x0)
-            if abs(x1 - x0) >= abs(y1 - y0):  # 斜率 <= 1
+            if abs(k) <= 1:
                 if x0 > x1:
                     x0, y0, x1, y1 = x1, y1, x0, y0
                 y = y0
                 result.append((x0, y0))
                 for x in range(x0 + 1, x1 + 1):
-                    y = int(y + k)
-                    result.append((x, y))
+                    y = y + k
+                    result.append((x, int(y + 0.5)))
             else:
                 if y0 > y1:
                     x0, y0, x1, y1 = x1, y1, x0, y0
                 x = x0
                 result.append((x0, y0))
                 for y in range(y0 + 1, y1 + 1):
-                    x = int(x + 1.0 / k)
-                    result.append((x0, y))
+                    x = x + 1.0 / k
+                    result.append((int(x + 0.5), y))
     elif algorithm == 'Bresenham':
         # TODO: need further modification
         if x0 == x1:
@@ -60,48 +58,63 @@ def draw_line(p_list, algorithm):
                 result.append((x0, y))
         else:
             m = (y1 - y0) / (x1 - x0)
-            if m > 0:
-                incre = 1
-            else:
-                incre = -1
-            if abs(y1 - y0) <= abs(x1 - x0):    # |m|<=1
+            if abs(m) <= 1:
                 if x0 > x1:
                     x0, y0, x1, y1 = x1, y1, x0, y0
-                deltax = x1 - x0
-                deltay = y1 - y0
-                p = 2 * deltay - deltax
-                c1 = 2 * deltay
-                c2 = 2 * (deltay - deltax)
-                result.append((x0, y0))
-                y = y0
-                for k in range(1, deltax + 1):  # deltax times
-                    if (m > 0 and p < 0) or (m < 0 and p > 0):  # ?
-                        result.append((x0 + k, y))
-                        p += c1
+                dx = x1 - x0
+                dy = y1 - y0
+                c1 = 2 * dy
+                c2 = 2 * (dy - dx)
+                c3 = 2 * (dy + dx)
+                if m >= 0:
+                    p = 2 * dy - dx
+                else:   # ?
+                    p = 2 * dy + dx
+                x, y = x0, y0
+                result.append((x, y))
+                for x in range(x0 + 1, x1 + 1):
+                    if m >= 0:
+                        if p >= 0:
+                            y += 1
+                            p += c2
+                        else:
+                            p += c1
                     else:
-                        # p==0, y_{k+1} = y_k +1
-                        y += incre
-                        result.append((x0 + k, y))
-                        p += c2
+                        if p >= 0:
+                            p += c1
+                        else:
+                            y -= 1
+                            p += c3
+                    result.append((x, y))
             else:
                 if y0 > y1:
                     x0, y0, x1, y1 = x1, y1, x0, y0
-                deltax = x1 - x0
-                deltay = y1 - y0
-                p = 2 * deltax - deltay
-                c1 = 2 * deltax
-                c2 = 2 * (deltax - deltay)
-                result.append((x0, y0))
-                x = x0
-                for k in range(1, deltay + 1):  # deltay times
-                    if (m > 0 and p < 0) or (m < 0 and p > 0):  # ?
-                        result.append((x, y0 + k))
-                        p += c1
+                dx = x1 - x0
+                dy = y1 - y0
+                p = 2 * dx - dy
+                c1 = 2 * dx
+                c2 = 2 * (dx - dy)
+                c3 = 2 * (dx + dy)
+                if m >= 0:
+                    p = 2 * dx - dy
+                else:   # ?
+                    p = 2 * dx + dy
+                x, y = x0, y0
+                result.append((x, y))
+                for y in range(y0 + 1, y1 + 1):
+                    if m > 0:
+                        if p >= 0:
+                            x += 1
+                            p += c2
+                        else:
+                            p += c1
                     else:
-                        # p==0, x_{k+1} = x_k +1
-                        x += incre
-                        result.append((x, y0 + k))
-                        p += c2
+                        if p >= 0:
+                            p += c1
+                        else:
+                            x -= 1
+                            p += c3
+                    result.append((x, y))
     return result
 
 
@@ -125,20 +138,19 @@ def draw_ellipse(p_list):
     :param p_list: (list of list of int: [[x0, y0], [x1, y1]]) 椭圆的矩形包围框左上角和右下角顶点坐标
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 绘制结果的像素点坐标列表
     """
+    result = []
+    result1 = []
     x0, y0 = p_list[0]
     x1, y1 = p_list[1]
-    result = []
-    # Sept.
-    result1 = []
-    xc = int((x0 + x1) / 2)
-    yc = int((y0 + y1) / 2)
-    rx = int((x1 - x0) / 2)
-    ry = int((y0 - y1) / 2)
+    xc = int((x0 + x1) / 2 + 0.5)
+    yc = int((y0 + y1) / 2 + 0.5)
+    rx = int(abs((x1 - x0) / 2) + 0.5)
+    ry = int(abs((y0 - y1) / 2) + 0.5)
     c1 = rx * rx
     c2 = ry * ry
     # 区域1
     x = 0
-    y = int(ry)
+    y = ry
     result.append((x, y)) 
     while c2 * x < c1 * y:
         p = c2 * (x + 1) * (x + 1) + c1 * (y - 0.5) * (y - 0.5) - c1 * c2
@@ -155,12 +167,53 @@ def draw_ellipse(p_list):
         result.append((x, y))
 
     for x, y in result:
-        # TODO: int()?
         result1.append((x + xc, y + yc))
         result1.append((-x + xc, y + yc))
         result1.append((x + xc, -y + yc))
         result1.append((-x + xc, -y + yc))
     return result1
+
+
+def deCasteljau(p_list, u):
+    p = p_list
+    n = len(p)
+    x = -1
+    y = -1
+    if n < 2:
+        return x, y
+    while len(p) > 1:
+        tmp = []
+        for i in range(len(p) - 1):
+            x = (1 - u) * p[i][0] + u * p[i + 1][0]
+            y = (1 - u) * p[i][1] + u * p[i + 1][1]
+            tmp.append([x, y])
+        p = tmp
+    return p[0][0], p[0][1]
+    
+
+'''
+def BSpline(p_list, i, u):
+    # P_{i-k},..., P_{i}, k=3
+    u2 = u * u
+    u3 = u * u2
+    k1 = 1.0 / 6 * (1 - u) * (1 - u) * (1 - u)
+    k2 = 1.0 / 6 * (3 * u3 - 6 * u2 + 4)
+    k3 = 1.0 / 6 * (-3 * u3 + 3 * u2 + 3 * u + 1)
+    k4 = 1.0 / 6 * u3
+    x = k1 * p_list[i - 3][0] + k2 * p_list[i - 2][0] + k3 * p_list[i - 1][0] + k4 * p_list[i][0]
+    y = k1 * p_list[i - 3][1] + k2 * p_list[i - 2][1] + k3 * p_list[i - 1][1] + k4 * p_list[i][1]
+    return x, y
+'''
+
+
+def deBooxCox(k, i, u):
+    if k == 1:
+        if u >= i and u < i + 1:    # ?
+            return 1
+        else:
+            return 0
+    else:
+        return (u - i) / (k - 1) * deBooxCox(k - 1, i, u) + (i + k - u) / (k - 1) * deBooxCox(k - 1, i + 1, u)
 
 
 def draw_curve(p_list, algorithm):
@@ -170,7 +223,28 @@ def draw_curve(p_list, algorithm):
     :param algorithm: (string) 绘制使用的算法，包括'Bezier'和'B-spline'（三次均匀B样条曲线，曲线不必经过首末控制点）
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 绘制结果的像素点坐标列表
     """
-    pass
+    result = []
+    total = 1000
+    if algorithm == 'Bezier':
+        for i in range(total + 1):  # u=0开始？
+            u = i / total
+            x, y = deCasteljau(p_list, u)
+            result.append((int(x + 0.5), int(y + 0.5)))
+    elif algorithm == 'B-spline':
+        total = 1000
+        n = len(p_list) - 1     # n+1个顶点
+        k = 3                   # 3次
+        u = k
+        while u <= n + 1:
+            x = 0
+            y = 0
+            for i in range(n + 1):
+                B = deBooxCox(k + 1, i, u)
+                x += B * p_list[i][0]
+                y += B * p_list[i][1]
+            result.append((int(x + 0.5), int(y + 0.5)))
+            u += 1.0 / total
+    return result
 
 
 def translate(p_list, dx, dy):
@@ -181,7 +255,10 @@ def translate(p_list, dx, dy):
     :param dy: (int) 垂直方向平移量
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 变换后的图元参数
     """
-    pass
+    result = []
+    for x, y in p_list:
+        result.append((x + dx, y + dy))
+    return result
 
 
 def rotate(p_list, x, y, r):
@@ -193,7 +270,16 @@ def rotate(p_list, x, y, r):
     :param r: (int) 顺时针旋转角度（°）
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 变换后的图元参数
     """
-    pass
+    result = []
+    s = -sin(r)
+    c = cos(r)
+    for x1, y1 in p_list:
+        x2 = (x1 - x) * c - (y1 - y) * s
+        y2 = (x1 - x) * s + (y1 - y) * c
+        x2 += x
+        y2 += y
+        result.append((int(x + 0.5), int(y + 0.5)))
+    return result
 
 
 def scale(p_list, x, y, s):
