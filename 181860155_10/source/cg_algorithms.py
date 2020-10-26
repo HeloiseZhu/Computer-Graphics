@@ -297,6 +297,22 @@ def scale(p_list, x, y, s):
     return result
 
 
+def encode(x, y, x_min, y_min, x_max, y_max):
+    LEFT = 1
+    RIGHT = 2
+    DOWN = 4
+    UP = 8
+    res = 0
+    if x < x_min:
+        res |= LEFT
+    if x > x_max:
+        res |= RIGHT
+    if y < y_min:
+        res |= DOWN
+    if y > y_max:
+        res |= UP
+    return res
+
 def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
     """线段裁剪
 
@@ -308,4 +324,58 @@ def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
     :param algorithm: (string) 使用的裁剪算法，包括'Cohen-Sutherland'和'Liang-Barsky'
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1]]) 裁剪后线段的起点和终点坐标
     """
-    pass
+    result = []
+    x1, y1 = p_list[0]
+    x2, y2 = p_list[1]
+    if x_min > x_max:
+        x_min, x_max = x_max, x_min
+    if y_min > y_max:
+        y_min, y_max = y_max, y_min
+        
+    if algorithm == 'Cohen-Sutherland':
+        LEFT = 1
+        RIGHT = 2
+        DOWN = 4
+        UP = 8
+        while True:
+            c1 = encode(x1, y1, x_min, y_min, x_max, y_max)
+            c2 = encode(x2, y2, x_min, y_min, x_max, y_max)
+            print((x1, y1), (x2, y2), c1, c2)
+            if c1 & c2 == 0:
+                if c1 | c2 == 0:
+                    return [[int(x1 + 0.5), int(y1 + 0.5)], [int(x2 + 0.5), int(y2 + 0.5)]]  # 均在窗口内
+                else:
+                    if c1 == 0: 
+                        # P1在窗口内，交换P1和P2
+                        x1, y1, x2, y2 = x2, y2, x1, y1
+                        c1, c2 = c2, c1
+                    if c1 & LEFT != 0:
+                        print("left")
+                        x = x_min
+                        if x1 == x2:
+                            y = y1
+                        else:
+                            y = y1 + (y1 - y2) / (x1 - x2) * (x_min - x1)
+                    elif c1 & RIGHT != 0:
+                        print("right")
+                        x = x_max
+                        if x1 == x2:
+                            y = y1
+                        else:
+                            y = y1 + (y1 - y2) / (x1 - x2) * (x_max - x1)
+                    elif c1 & DOWN != 0:
+                        print("down")
+                        y = y_min
+                        x = x1 + (x1 - x2) / (y1 - y2) * (y_min - y1)
+                    elif c1 & UP != 0:
+                        print("up")
+                        y = y_max
+                        x = x1 + (x1 - x2) / (y1 - y2) * (y_max - y1)
+                    x1 = x
+                    y1 = y
+            else:
+                return []   # 均在窗口外
+    elif algorithm == 'Liang-Barsky':
+        pass
+
+    return result

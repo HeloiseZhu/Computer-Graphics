@@ -99,10 +99,10 @@ if __name__ == '__main__':
                 y0 = int(line[3])
                 x1 = int(line[4])
                 y1 = int(line[5])
-                algorithm = line[6]
-                #item_dict[item_id] = ['line', [[x0, y0], [x1, y1]], algorithm, np.array(pen_color)]
+                clip_alg = line[6]
                 # TODO:
-            ...
+                item_type, p_list, algorithm, color = item_dict[item_id]
+                item_dict[item_id] = [item_type, alg.clip(p_list, x0, y0, x1, y1, clip_alg), algorithm, color]
 
             line = fp.readline()
 
