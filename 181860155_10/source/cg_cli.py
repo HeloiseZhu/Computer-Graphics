@@ -41,7 +41,8 @@ if __name__ == '__main__':
                     elif item_type == 'curve':
                         pixels = alg.draw_curve(p_list, algorithm)
                     for x, y in pixels:
-                        canvas[height - 1 - y, x] = color
+                        if x >= 0 and x < width and y >= 0 and y < height:  #?
+                            canvas[height - 1 - y, x] = color
                 Image.fromarray(canvas).save(os.path.join(output_dir, save_name + '.bmp'), 'bmp')
             elif line[0] == 'setColor':
                 pen_color[0] = int(line[1]) #R
@@ -77,20 +78,21 @@ if __name__ == '__main__':
                 dx = int(line[2])
                 dy = int(line[3])
                 item_type, p_list, algorithm, color = item_dict[item_id]
-                item_dict[item_id] = [item_id, alg.translate(p_list, dx, dy), algorithm, color]
+                item_dict[item_id] = [item_type, alg.translate(p_list, dx, dy), algorithm, color]
             elif line[0] == 'rotate':
                 item_id = line[1]
                 x = int(line[2])
                 y = int(line[3])
                 r = int(line[4])
                 item_type, p_list, algorithm, color = item_dict[item_id]
-                item_dict[item_id] = [item_id, alg.translate(p_list, dx, dy), algorithm, color]
+                item_dict[item_id] = [item_type, alg.rotate(p_list, x, y, r), algorithm, color]
             elif line[0] == 'scale':
                 item_id = line[1]
                 x = int(line[2])
                 y = int(line[3])
                 s = float(line[4])
-                # TODO:
+                item_type, p_list, algorithm, color = item_dict[item_id]
+                item_dict[item_id] = [item_type, alg.scale(p_list, x, y, s), algorithm, color]
             elif line[0] == 'clip':
                 item_id = line[1]
                 x0 = int(line[2])

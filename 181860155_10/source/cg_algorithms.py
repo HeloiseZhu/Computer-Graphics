@@ -271,14 +271,12 @@ def rotate(p_list, x, y, r):
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 变换后的图元参数
     """
     result = []
-    s = -sin(r)
-    c = cos(r)
+    s = -sin(radians(r))
+    c = cos(radians(r))
     for x1, y1 in p_list:
-        x2 = (x1 - x) * c - (y1 - y) * s
-        y2 = (x1 - x) * s + (y1 - y) * c
-        x2 += x
-        y2 += y
-        result.append((int(x + 0.5), int(y + 0.5)))
+        x2 = x + (x1 - x) * c - (y1 - y) * s
+        y2 = y + (x1 - x) * s + (y1 - y) * c
+        result.append((int(x2 + 0.5), int(y2 + 0.5)))
     return result
 
 
@@ -291,7 +289,12 @@ def scale(p_list, x, y, s):
     :param s: (float) 缩放倍数
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 变换后的图元参数
     """
-    pass
+    result = []
+    for x1, y1 in p_list:
+        x2 = x + (x1 - x) * s
+        y2 = y + (y1 - y) * s
+        result.append((int(x2 + 0.5), int(y2 + 0.5)))
+    return result
 
 
 def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
