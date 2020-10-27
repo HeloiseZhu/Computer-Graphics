@@ -401,7 +401,8 @@ def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
                 else:
                     u2=min(u2,r)
                 if(u1>u2):
-                    flag=True
+                    flag = True
+            # print(u1,u2)
         if(flag==False):
             xx0=int(x0+u1*(x1-x0)+0.5)
             yy0=int(y0+u1*(y1-y0)+0.5)

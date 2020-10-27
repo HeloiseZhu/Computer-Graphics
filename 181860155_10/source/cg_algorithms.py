@@ -12,9 +12,11 @@ def draw_line(p_list, algorithm):
     :param algorithm: (string) 绘制使用的算法，包括'DDA'和'Bresenham'，此处的'Naive'仅作为示例，测试时不会出现
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 绘制结果的像素点坐标列表
     """
+    result = []
+    if len(p_list) != 2:
+        return []
     x0, y0 = p_list[0]
     x1, y1 = p_list[1]
-    result = []
     if algorithm == 'Naive':
         if x0 == x1:
             for y in range(y0, y1 + 1):
@@ -313,6 +315,7 @@ def encode(x, y, x_min, y_min, x_max, y_max):
         res |= UP
     return res
 
+
 def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
     """线段裁剪
 
@@ -325,8 +328,8 @@ def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1]]) 裁剪后线段的起点和终点坐标
     """
     result = []
-    x1, y1 = p_list[0]
-    x2, y2 = p_list[1]
+    x0, y0 = p_list[0]
+    x1, y1 = p_list[1]
     if x_min > x_max:
         x_min, x_max = x_max, x_min
     if y_min > y_max:
@@ -338,44 +341,59 @@ def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
         DOWN = 4
         UP = 8
         while True:
+            c0 = encode(x0, y0, x_min, y_min, x_max, y_max)
             c1 = encode(x1, y1, x_min, y_min, x_max, y_max)
-            c2 = encode(x2, y2, x_min, y_min, x_max, y_max)
-            print((x1, y1), (x2, y2), c1, c2)
-            if c1 & c2 == 0:
-                if c1 | c2 == 0:
-                    return [[int(x1 + 0.5), int(y1 + 0.5)], [int(x2 + 0.5), int(y2 + 0.5)]]  # 均在窗口内
+            if c0 & c1 == 0:
+                if c0 | c1 == 0:
+                    return [[int(x0 + 0.5), int(y0 + 0.5)], [int(x1 + 0.5), int(y1 + 0.5)]]  # 均在窗口内
                 else:
-                    if c1 == 0: 
+                    if c0 == 0: 
                         # P1在窗口内，交换P1和P2
-                        x1, y1, x2, y2 = x2, y2, x1, y1
-                        c1, c2 = c2, c1
-                    if c1 & LEFT != 0:
-                        print("left")
+                        x0, y0, x1, y1 = x1, y1, x0, y0
+                        c0, c1 = c1, c0
+                    if c0 & LEFT != 0:
                         x = x_min
-                        if x1 == x2:
-                            y = y1
+                        if x0 == x1:
+                            y = y0
                         else:
-                            y = y1 + (y1 - y2) / (x1 - x2) * (x_min - x1)
-                    elif c1 & RIGHT != 0:
-                        print("right")
+                            y = y0 + (y0 - y1) / (x0 - x1) * (x_min - x0)
+                    elif c0 & RIGHT != 0:
                         x = x_max
-                        if x1 == x2:
-                            y = y1
+                        if x0 == x1:
+                            y = y0
                         else:
-                            y = y1 + (y1 - y2) / (x1 - x2) * (x_max - x1)
-                    elif c1 & DOWN != 0:
-                        print("down")
+                            y = y0 + (y0 - y1) / (x0 - x1) * (x_max - x0)
+                    elif c0 & DOWN != 0:
                         y = y_min
-                        x = x1 + (x1 - x2) / (y1 - y2) * (y_min - y1)
-                    elif c1 & UP != 0:
-                        print("up")
+                        x = x0 + (x0 - x1) / (y0 - y1) * (y_min - y0)
+                    elif c0 & UP != 0:
                         y = y_max
-                        x = x1 + (x1 - x2) / (y1 - y2) * (y_max - y1)
-                    x1 = x
-                    y1 = y
+                        x = x0 + (x0 - x1) / (y0 - y1) * (y_max - y0)
+                    x0 = x
+                    y0 = y
             else:
                 return []   # 均在窗口外
     elif algorithm == 'Liang-Barsky':
-        pass
+        dx = x1 - x0
+        dy = y1 - y0
+        u1, u2 = 0, 1
+        m = [(-dx, x0 - x_min), (dx, x_max - x0), (-dy, y0 - y_min), (dy, y_max - y0)]
+        for p, q in m:
+            if p == 0:
+                if q < 0:
+                    return []
+            else:
+                r = q / p
+                if p < 0:
+                    u1 = max(r, u1)
+                else:
+                    u2 = min(r, u2)
+            if u1 > u2:
+                return []
+        x01 = int(x0 + u1 * dx + 0.5)
+        y01 = int(y0 + u1 * dy + 0.5)
+        x11 = int(x0 + u2 * dx + 0.5)
+        y11 = int(y0 + u2 * dy + 0.5)
+        result = [[x01, y01], [x11, y11]]
 
     return result
