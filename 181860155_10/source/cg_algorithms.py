@@ -93,7 +93,6 @@ def draw_line(p_list, algorithm):
                     x0, y0, x1, y1 = x1, y1, x0, y0
                 dx = x1 - x0
                 dy = y1 - y0
-                p = 2 * dx - dy
                 c1 = 2 * dx
                 c2 = 2 * (dx - dy)
                 c3 = 2 * (dx + dy)
@@ -104,7 +103,7 @@ def draw_line(p_list, algorithm):
                 x, y = x0, y0
                 result.append((x, y))
                 for y in range(y0 + 1, y1 + 1):
-                    if m > 0:
+                    if m >= 0:
                         if p >= 0:
                             x += 1
                             p += c2
@@ -276,6 +275,7 @@ def rotate(p_list, x, y, r):
     s = -sin(radians(r))
     c = cos(radians(r))
     for x1, y1 in p_list:
+        # TODO：
         x2 = x + (x1 - x) * c - (y1 - y) * s
         y2 = y + (x1 - x) * s + (y1 - y) * c
         result.append((int(x2 + 0.5), int(y2 + 0.5)))
