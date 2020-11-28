@@ -20,14 +20,13 @@
 \usepackage{natbib}
 \usepackage{float}
 \usepackage{epstopdf}
+\usepackage{caption}
 
 
-%--
-
-%--
 \begin{document}
-\title{\textbf{《计算机图形学》10月报告}}
-\author{181860155 朱晓晴 \href{mailto:xxx@xxx.com}{heloize@126.com}}
+\title{\textbf{《计算机图形学》11月报告}}
+\author{181860155 朱晓晴 \href{mailto:heloize@126.com}{heloize@126.com}}
+\date{2020年11月}
 \maketitle
 
 \section{综述}
@@ -40,13 +39,17 @@
 在cg\underline{ }cli.py中，补充了对drawCurve、translate、rotate、scale和clip等指令的解析。
 在cg\underline{ }algorithms.py中，完成了曲线绘制算法（draw\underline{ }curve函数）、
 平移算法（translate函数）、旋转算法（rotate函数）、缩放算法（scale函数）和线段裁剪算法（clip函数）。
+至此，所有指令的算法已全部完成。
 
+在11月提交中，主要完成了cg\underline{ }gui.py中图形界面的基本功能，即将cg\underline{ }cli.py中的所有操作可视化。
+同时，根据图形界面的显示需要，在cg\underline{ }algorithms.py中添加了相应的函数，
+例如draw\underline{ }polygon\underline{ }gui。
+至此，要求实现的功能已全部完成。
 
 
 \section{算法介绍}
 % 已完成或拟采用算法的原理介绍、自己的理解、对比分析等
 \subsection{算法原理}
-在10月提交中，已实现所有指令的算法。
 \subsubsection{绘制线段}
 \textbf{要求：}根据给定两点$(x_0,y_0)$和$(x_1,y_1)$绘制线段。
 
@@ -307,13 +310,20 @@ $p_k>0$时，令$u_2$为其本身和$\frac{q_k}{p_k}$中的较小值。
 \subsubsection{绘制线段}
 Naive算法以单位间隔对$x$取样，并根据直线方程计算出相应的$y$坐标，以此得到线段上所有的点。
 这一过程需要做大量乘法运算，算法运行速度慢，且对硬件要求较高。
+此外，Naive算法不对斜率绝对值大于1和小于1的两种情况区别处理，而是统一地以单位间隔对$x$取样。
+因而，当斜率绝对值大于1时，易出现直线取样点稀疏的问题。
 
-DDA算法针对上述缺陷做出了优化，它利用光栅特性消除了直线方程中的乘法，在$x$和$y$方向使用合适的增量逐步推导出各像素点的位置。
-然而，DDA算法仍有不足之处，算法中的浮点运算和取整操作十分耗时，且取整误差的积累会导致长线段的像素位置偏离实际位置。\cite{ref1}
+DDA算法针对上述缺陷做出了优化，它利用光栅特性消除了直线方程中的乘法，在$x$和$y$方向使用合适的增量逐步推导出各像素点的位置，两种算法的对比如图3所示。
+然而，DDA算法仍有不足之处，算法中的浮点运算和取整操作十分耗时，且取整误差的积累会导致长线段的像素位置偏离实际位置。
 
 Bresenham算法在每个已确定的像素点处计算决策参数，选择距离实际线段较近的点作为下一个绘制的点。
 相较于DDA算法，这一做法有利于控制绘制出的直线对实际线段的偏离程度。
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{naive-vs-dda.PNG}
+    \caption{Naive算法和DDA算法效果对比}
+\end{figure}
 
 \subsubsection{绘制曲线}
 绘制曲线使用了Bezier曲线和B-Spline曲线，两者在基函数和局部控制能力上存在较大差异。
@@ -329,7 +339,7 @@ Bresenham算法在每个已确定的像素点处计算决策参数，选择距�
 \section{系统介绍}
 % 已完成或拟采用的系统框架、交互逻辑、设计思路等
 \subsection{交互逻辑}
-目前，系统沿用demo的交互逻辑，即命令行和可视化界面两种运行方式。
+目前，系统沿用demo的框架，即命令行和可视化界面两种运行方式。
 
 以命令行方式运行时，
 系统逐行读取指令文件，解析指令
@@ -339,30 +349,225 @@ Bresenham算法在每个已确定的像素点处计算决策参数，选择距�
 调用cg\underline{ }algorithms.py模块中的相关算法，
 再以可视化方式直接呈现结果。
 
+下面简要介绍可视化界面各个功能的底层实现逻辑和交互方式。
+
+\textbf{设置画笔}
+
+实现逻辑：调用现成的QColorDialog.getColor函数，显示出常见的调色界面，并记录下函数返回值，作为系统当前的画笔颜色。
+为MyItem类添加成员变量color，以记录图元颜色。新建MyItem实例时，令该图元的颜色为系统当前的画笔颜色，即可实现要求的功能。
+
+交互方式：点击“文件-设置画笔”，在弹出的颜色选择面板（如图4所示）中选择画笔颜色，选择完毕后点击“OK”按钮。
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.75]{select-color.PNG}
+    \caption{颜色选择面板}
+\end{figure}
+
+\textbf{重置画布}
+
+实现逻辑：利用现成的QDialog类生成输入窗口，得到输入的数据后，
+首先清除item及其在图元列表中的表现，然后根据获得的数据重新设置scene和canvas的宽度和高度。
+
+交互方式：点击“文件-重置画布”，在弹出的输入窗口（如图5所示）中输入画布的宽度和高度值，填写完毕后点击“确定”按钮。
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=1]{reset-canvas.PNG}
+    \caption{输入窗口}
+\end{figure}
+
+\textbf{保存画布}
+
+实现逻辑：调用现成的QFileDialog.getSaveFileName函数，显示出常见的文件保存界面。
+再调用QGraphicsView.grab函数截取画布，并将返回的数据保存为位图。
+
+交互方式：点击“文件-保存画布”，在弹出的文件保存窗口（如图6所示）中确定文件名称和保存的位置，完成后点击“保存”按钮。
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{save-canvas.PNG}
+    \caption{文件保存窗口}
+\end{figure}
+
+\textbf{绘制线段}
+
+实现逻辑：点击鼠标时，将当前坐标作为线段的两个端点，再将两个端点的坐标作为参数传给alg.draw\underline{ }line函数，得到新的线段。
+鼠标移动时，将线段第二个端点更新为当前坐标。
+
+交互方式：点击“绘制-线段-算法”，按住鼠标拖拽出线段后松开鼠标，绘制示例如图7所示。
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.75]{draw-line.PNG}
+    \caption{绘制线段示例}
+\end{figure}
+
+
+\textbf{绘制多边形}
+
+实现逻辑：点击鼠标时，如果当前的点在第一个顶点为圆心的半径10个像素的圆内，则认为已经绘制完毕；否则，把当前坐标加入多边形的顶点列表。
+鼠标移动时，将顶点列表的最后一个坐标更新为当前坐标。
+
+交互方式：点击“绘制-多边形-算法”，依次点击多边形各个顶点（也可拖拽），最后需再次点击第一个顶点，表示绘制结束，绘制示例如图8所示。
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.8]{draw-polygen.PNG}
+    \caption{绘制多边形示例}
+\end{figure}
+
+\textbf{绘制椭圆}
+
+实现逻辑：点击鼠标时，将当前坐标作为椭圆绑定矩形的对角顶点坐标，再将两个顶点的坐标作为参数传给alg.draw\underline{ }ellipse函数，得到新的椭圆。
+鼠标移动时，将第二个对角顶点坐标更新为当前坐标。
+
+交互方式：点击“绘制-椭圆”，按住鼠标拖拽出椭圆后松开鼠标，绘制示例如图9所示。
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.8]{draw-ellipse.PNG}
+    \caption{绘制椭圆示例}
+\end{figure}
+
+\textbf{绘制曲线}
+
+实现逻辑：点击鼠标时，把当前坐标加入曲线的控制点列表。鼠标移动时，将控制点列表的最后一个坐标更新为当前坐标。按回车键时，绘制结束。
+
+交互方式：点击“绘制-曲线-算法”，依次点击曲线各个控制点，最后按回车键表示绘制结束，绘制示例如图10所示。
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.8]{draw-curve.PNG}
+    \caption{绘制曲线示例}
+\end{figure}
+
+\textbf{平移}
+
+实现逻辑：点击鼠标时，将当前坐标作为平移向量的起点和终点坐标，再将平移向量的坐标作为参数传给alg.translate函数，得到平移后的图元。
+鼠标移动时，将平移向量的终点坐标更新为当前坐标。
+
+交互方式：点击“编辑-平移”，按住鼠标将图元拖拽到目标位置，再松开鼠标，示例如图11所示。
+\begin{figure}[H]
+    \centering
+    \subfigure[平移前]{
+    \begin{minipage}{7cm}
+        \centering
+        \includegraphics[scale=0.8]{before-translate.PNG}
+    \end{minipage}}
+    \subfigure[平移后]{
+        \begin{minipage}{7cm}
+            \centering
+            \includegraphics[scale=0.8]{after-translate.PNG}
+        \end{minipage}}
+        \caption{平移示例}
+        \label{fig:1}
+\end{figure}
+
+\textbf{旋转}
+
+实现逻辑：旋转分为两个阶段，第一阶段，点击鼠标时将当前坐标作为旋转中心，移动鼠标时将旋转中心更新为当前坐标；
+第二阶段，点击鼠标时将当前坐标作为旋转弧线的起点和终点，移动鼠标时将弧线的终点更新为当前坐标。
+再将旋转中心坐标和根据弧线计算出的旋转角度作为参数传给alg.rotate函数，得到旋转后的图元。
+
+交互方式：点击“编辑-旋转”，首先点击旋转中心，接着按住鼠标拖拽出旋转的弧线，再松开鼠标，示例如图12所示。
+\begin{figure}[H]
+    \centering
+    \subfigure[旋转前]{
+    \begin{minipage}{7cm}
+        \centering
+        \includegraphics[scale=0.8]{before-rotate.PNG}
+    \end{minipage}}
+    \subfigure[旋转后]{
+        \begin{minipage}{7cm}
+            \centering
+            \includegraphics[scale=0.8]{after-rotate.PNG}
+        \end{minipage}}
+        \caption{旋转示例}
+        \label{fig:1}
+\end{figure}
+
+\textbf{缩放}
+
+实现逻辑：缩放分为两个阶段，第一阶段，点击鼠标时将当前坐标作为缩放中心，移动鼠标时将缩放中心更新为当前坐标；
+第二阶段，点击鼠标时将当前坐标作为缩放线段的起点和终点，移动鼠标时将缩放线段的终点更新为当前坐标。
+令缩放倍数等于缩放线段长度与80的比值，将缩放中心坐标和缩放倍数作为参数传给alg.scale函数，得到缩放后的图元。
+
+交互方式：点击“编辑-缩放”，首先点击缩放中心，接着按住鼠标拖拽指导图元变为目标大小，再松开鼠标，示例如图13所示。
+\begin{figure}[H]
+    \centering
+    \subfigure[缩放前]{
+    \begin{minipage}{7cm}
+        \centering
+        \includegraphics[scale=0.8]{before-scale.PNG}
+    \end{minipage}}
+    \subfigure[缩放后]{
+        \begin{minipage}{7cm}
+            \centering
+            \includegraphics[scale=0.8]{after-scale.PNG}
+        \end{minipage}}
+        \caption{缩放示例}
+        \label{fig:1}
+\end{figure}
+
+\textbf{裁剪}
+
+实现逻辑：点击鼠标时，将当前坐标作为裁剪窗口的对角顶点坐标，再将两个顶点坐标作为参数传给alg.clip函数，得到裁剪后的图元。
+鼠标移动时，将裁剪窗口的第二个对角顶点坐标更新为当前坐标。
+
+交互方式：点击“编辑-裁剪”，按住鼠标拖拽出裁剪矩形的对角线，得到裁剪后的线段，示例如图14所示。
+\begin{figure}[H]
+    \centering
+    \subfigure[裁剪前]{
+    \begin{minipage}{7cm}
+        \centering
+        \includegraphics[scale=0.8]{before-clip.PNG}
+    \end{minipage}}
+    \subfigure[裁剪后]{
+        \begin{minipage}{7cm}
+            \centering
+            \includegraphics[scale=0.8]{after-clip.PNG}
+        \end{minipage}}
+        \caption{裁剪示例}
+        \label{fig:1}
+\end{figure}
+
+
+
 \subsection{设计思路}
-后续，在完成要求的功能后，将着重优化图形界面。
-目前，计划在图形界面中做出以下修改：
+后续将着重优化图形界面，计划在图形界面中做出以下修改：
 
-（1）对用户隐藏图元序号，直接通过鼠标操作选中图元，并对图元进行编辑；
+（1）对用户隐藏图元序号，可以直接通过鼠标选中图元，并对图元进行平移操作；
 
-（2）优化颜色设置方式，考虑通过显示调色盘简化用户设置颜色的过程；
+（2）优化曲线绘制交互，用鼠标操作代替按下回车键来标志绘制结束；
 
-（3）添加可绘制的图元类型，如填充图元、虚线等。
+（3）优化平移功能，目前在画布任意处拖拽出平移向量都能平移图元，
+但这一操作与常见画图软件的平移操作不一致。
+后续，考虑将平移向量的起点限定在选定图元的绑定矩形中。
+
+（4）优化裁剪功能，目前裁剪时随着裁剪窗口的变化，裁剪后的线段实时更新，
+不便观察完整线段与裁剪窗口的位置关系。
+后续，考虑在裁剪窗口未确定时保留原来的完整线段，使操作更为自然便利。
+
+（5）目前保存画布时调用grab函数，然而当启用滚动条时，这一方法无法保存完整的画布。
+因此，11月提交的代码中禁用滚动条，以保存完整画布。
+后续，考虑启用滚动条，以便扩大画布尺寸。
+
+（6）优化图形界面，目前绘制图元、编辑图元都需要点击菜单栏若干次，操作不够便捷。
+后续，考虑将各个功能分散为菜单栏的图标。
+
+（7）添加额外的功能，如多边形填充、撤销、复制等。
 
 
 \section{总结}
-10月提交中，运用了目前已讲到图形学基础知识，并自学了解了绘制图元和修改图元的若干算法。
-通过实现所有指令的算法，加深了对图形显示原理的理解。
-同时，通过反复测试找出了9月提交代码中的若干错误，如公式错误、代码编写错误等。
+11月提交中，运用了目前已讲到图形学基础知识，并自学了解了绘制图元和编辑图元的若干算法。
+通过实现所有指令的算法和图形界面，加深了对图形显示原理的理解。
+同时，通过反复测试找出了之前提交代码中的若干错误，如公式错误、代码编写错误等。
 在纠正代码错误的过程中，加深了对算法公式推导过程和Python语言的理解程度。
 
-目前对图形界面的理解较浅，尚未基于demo的图形界面做出显著改动，
-后续将着重优化图形界面，使得整个图形学系统功能更为强大，使用更为简易。
+目前对图形界面的理解较浅，尚未基于demo的图形界面框架做出显著改动，
+主要着眼于在图形界面实现实验要求的基本功能。
+后续将着重优化图形界面，使得整个图形学系统功能更为多样，使用更为便利。
+\\\\\\
 
 \bibliographystyle{plain}
 \begin{thebibliography}{99}
 % 注明在实现作业过程中使用的参考资料，包括技术博客等
 \bibitem{ref1} 孙正兴等. 计算机图形学教程[M]. 机械工业出版社, 2006.
+\bibitem{ref2} 计算向量夹角\\\url{https://blog.csdn.net/qq_42423940/article/details/83757427}
 \end{thebibliography}
 
 \end{document}

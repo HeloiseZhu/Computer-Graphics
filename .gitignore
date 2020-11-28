@@ -34,4 +34,5 @@
 # Others
 *.aux
 *.log
+*.synctex
 example/
