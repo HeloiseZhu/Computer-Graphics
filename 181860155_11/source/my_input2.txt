@@ -1,5 +1,0 @@
-resetCanvas 600 600
-setColor 0 255 0
-drawLine line1 100 100 110 120 Naive
-drawLine line2 150 100 160 120 DDA
-saveCanvas xxx
