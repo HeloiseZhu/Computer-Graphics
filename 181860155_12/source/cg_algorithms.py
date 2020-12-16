@@ -119,6 +119,28 @@ def draw_line(p_list, algorithm):
     return result
 
 
+def draw_rectangle(p_list, algorithm):
+    """绘制矩形
+
+    :param p_list: (list of list of int: [[x0, y0], [x1, y1]]) 矩形对角顶点坐标
+    :param algorithm: (string) 绘制使用的算法，包括'DDA'和'Bresenham'
+    :return: (list of list of int: [[x_0, y_0], [x_1, y_1]]) 绘制结果的像素点坐标列表
+    """
+    result = []
+    x0, y0 = p_list[0]
+    x1, y1 = p_list[1]
+    if x1 < x0:
+        x0, x1 = x1, x0
+    if y1 < y0:
+        y0, y1 = y1, y0
+
+    result += draw_line([[x0, y0], [x0, y1]], algorithm)
+    result += draw_line([[x0, y1], [x1, y1]], algorithm)
+    result += draw_line([[x1, y1], [x1, y0]], algorithm)
+    result += draw_line([[x1, y0], [x0, y0]], algorithm)
+    return result
+
+
 def draw_polygon(p_list, algorithm):
     """绘制多边形
 
