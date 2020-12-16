@@ -24,7 +24,7 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QMenu,  #
     QAction)    #
-from PyQt5.QtGui import QPainter, QMouseEvent, QColor, QPixmap, QCursor#(?)
+from PyQt5.QtGui import QPainter, QMouseEvent, QColor, QPixmap, QCursor, QTransform
 from PyQt5.QtCore import QRectF, Qt, QPoint
 import math
 import numpy as np
@@ -55,16 +55,18 @@ class MyCanvas(QGraphicsView):
 
     def start_copy(self):
         # TODO: id是否有效
-        self.status = ''
+        self.status = 'copy'
         self.clip_item = self.item_dict[self.selected_id]
 
     def start_paste(self, item_id):
-        self.status = ''
-        self.clip_item.id = item_id
-        self.item_dict[self.clip_item.id] = self.clip_item
-        self.list_widget.addItem(self.clip_item.id)
-        self.scene().addItem(self.clip_item)
+        self.status = 'paste'
+        self.temp_item = MyItem(item_id, self.clip_item.item_type, self.clip_item.p_list, self.clip_item.algorithm, color=self.clip_item.color)
+        self.temp_item.p_list = alg.translate(self.temp_item.p_list, 10, 10)
+        self.item_dict[self.temp_item.id] = self.temp_item
+        self.list_widget.addItem(self.temp_item.id)
+        self.scene().addItem(self.temp_item)
         self.updateScene([self.sceneRect()])
+        self.finish_draw()
 
     def start_draw_line(self, algorithm, item_id):
         self.status = 'line'
@@ -117,7 +119,10 @@ class MyCanvas(QGraphicsView):
 
     def finish_draw(self):
         self.temp_item = None
+        self.main_window.item_cnt += 1
         self.temp_id = self.main_window.get_id()
+        # TODO:
+        #self.status = ''
         
     def finish_edit(self):
         self.temp_item = None
@@ -190,6 +195,11 @@ class MyCanvas(QGraphicsView):
             self.scale_end = [x, y]
         elif self.status == 'clip':
             self.temp_coordinate = [x, y]
+        elif self.status == '':
+            # TODO: status何时表示空闲
+            self.temp_item = self.main_window.scene.itemAt(pos, QTransform())
+            if self.temp_item:
+                self.selection_changed(self.temp_item.id)
         self.updateScene([self.sceneRect()])
         super().mousePressEvent(event)
 
@@ -300,6 +310,7 @@ class MyCanvas(QGraphicsView):
         elif self.status == 'clip':
             self.item_dict[self.selected_id] = self.temp_item
             #self.finish_edit()
+        self.updateScene([self.sceneRect()])
         super().mouseReleaseEvent(event)
 
     '''
@@ -420,7 +431,7 @@ class MainWindow(QMainWindow):
     """
     def __init__(self):
         super().__init__()
-        self.item_cnt = 1
+        self.item_cnt = 0
 
         # 使用QListWidget来记录已有的图元，并用于选择图元。
         # TODO:这是图元选择的简单实现方法，更好的实现是在画布中直接用鼠标选择图元
@@ -512,23 +523,20 @@ class MainWindow(QMainWindow):
         self.resize(600, 600)   # TODO:
         self.setWindowTitle('CG Demo')  # TODO:
 
-        # 附加功能所需变量
-
 
     def get_id(self):
         _id = str(self.item_cnt)
-        self.item_cnt += 1
+        #self.item_cnt += 1
         return _id
 
     def list_context_menu_action(self):
         context_menu = QMenu()
-        #clip_act = context_menu.addAction('裁剪')
+        #cut_act = context_menu.addAction('剪切')
         copy_act = context_menu.addAction('复制')
         paste_act = context_menu.addAction('粘贴')
         copy_act.triggered.connect(self.copy_action)
         paste_act.triggered.connect(self.paste_action)
         selected_index = self.list_widget.indexAt(self.list_widget.mapFromGlobal(QCursor.pos())).row()
-        print(selected_index)
         if selected_index > -1:
             context_menu.exec_(QCursor.pos())
 
@@ -536,10 +544,8 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage('复制图元')
         self.canvas_widget.start_copy()
 
-
     def paste_action(self):
         self.statusBar().showMessage('粘贴图元')
-        self.item_cnt -= 1
         self.canvas_widget.start_paste(self.get_id())
 
     def set_pen_action(self):
@@ -594,70 +600,60 @@ class MainWindow(QMainWindow):
         '''
 
     def line_naive_action(self):
-        self.item_cnt -= 1
         self.canvas_widget.start_draw_line('Naive', self.get_id())
         self.statusBar().showMessage('Naive算法绘制线段')
         self.list_widget.clearSelection()
         self.canvas_widget.clear_selection()
 
     def line_dda_action(self):
-        self.item_cnt -= 1
         self.canvas_widget.start_draw_line('DDA', self.get_id())
         self.statusBar().showMessage('DDA算法绘制线段')
         self.list_widget.clearSelection()
         self.canvas_widget.clear_selection()
 
     def line_bresenham_action(self):
-        self.item_cnt -= 1
         self.canvas_widget.start_draw_line('Bresenham', self.get_id())
         self.statusBar().showMessage('Bresenham算法绘制线段')
         self.list_widget.clearSelection()
         self.canvas_widget.clear_selection()
 
     def rectangle_dda_action(self):
-        self.item_cnt -= 1
         self.canvas_widget.start_draw_rectangle('DDA', self.get_id())
         self.statusBar().showMessage('DDA算法绘制矩形')
         self.list_widget.clearSelection()
         self.canvas_widget.clear_selection()
 
     def rectangle_bresenham_action(self):
-        self.item_cnt -= 1
         self.canvas_widget.start_draw_rectangle('Bresenham', self.get_id())
         self.statusBar().showMessage('Bresenham算法绘制矩形')
         self.list_widget.clearSelection()
         self.canvas_widget.clear_selection()
 
     def polygon_dda_action(self):
-        self.item_cnt -= 1
         self.canvas_widget.start_draw_polygon('DDA', self.get_id())
         self.statusBar().showMessage('DDA算法绘制多边形')
         self.list_widget.clearSelection()
         self.canvas_widget.clear_selection()
 
     def polygon_bresenham_action(self):
-        self.item_cnt -= 1
         self.canvas_widget.start_draw_polygon('Bresenham', self.get_id())
         self.statusBar().showMessage('Bresenham算法绘制多边形')
         self.list_widget.clearSelection()
         self.canvas_widget.clear_selection()
 
     def ellipse_action(self):
-        self.item_cnt -= 1
         self.canvas_widget.start_draw_ellipse('MCA', self.get_id())
         self.statusBar().showMessage('绘制椭圆')
         self.list_widget.clearSelection()
         self.canvas_widget.clear_selection()
 
     def curve_bezier_action(self):
-        self.item_cnt -= 1
         self.canvas_widget.start_draw_curve('Bezier', self.get_id())
         self.statusBar().showMessage('Bezier算法绘制曲线')
         self.list_widget.clearSelection()
         self.canvas_widget.clear_selection()
 
     def curve_b_spline_action(self):
-        self.item_cnt -= 1
         self.canvas_widget.start_draw_curve('B-spline', self.get_id())
         self.statusBar().showMessage('B-spline算法绘制曲线')
         self.list_widget.clearSelection()
@@ -674,6 +670,7 @@ class MainWindow(QMainWindow):
             if temp_item.item_type != 'ellipse':
                 self.canvas_widget.start_rotate()
                 self.statusBar().showMessage('旋转')
+            #TODO: 椭圆添加提示
 
     def scale_action(self):
         if self.canvas_widget.selected_id:
