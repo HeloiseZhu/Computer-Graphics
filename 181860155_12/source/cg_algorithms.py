@@ -438,3 +438,56 @@ def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
         result = [[x01, y01], [x11, y11]]
 
     return result
+
+
+def polygon_fill(p_list):
+    """填充多边形
+
+    :param p_list: (list of list of int: [[x0, y0], [x1, y1], [x2, y2], ...]) 多边形的顶点坐标列表
+    :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 绘制结果的像素点坐标列表
+    """
+    result = []
+    y_min = p_list[0][1]
+    y_max = p_list[0][1]
+    for x, y in p_list:
+        y_min = min(y, y_min)
+        y_max = max(y, y_max)
+    NET = [[] for i in range(y_max - y_min + 1)] 
+    AET = []
+
+    # 建立有序边表NET
+    for i, (x, y) in enumerate(p_list):
+        x1, y1 = p_list[i - 1]
+        x2, y2 = p_list[(i + 1) % len(p_list)]
+        if y1 > y:
+            # (x, ymax, k)
+            k = float(x - x1) / float(y - y1)
+            NET[y - y_min].append([x, y1, k])
+        if y2 > y:
+            k = float(x - x2) / float(y - y2)
+            NET[y - y_min].append([x, y2, k])
+        
+    # 建立活性边表AET
+    for y in range(y_max - y_min + 1):
+        # 更新AET
+        for j, aet_tuple in enumerate(AET):
+            aet_tuple[0] = aet_tuple[0] + aet_tuple[2]
+            AET[j] = aet_tuple
+        # 删除ymax=y+y_min的元素
+        for j in range(len(AET) - 1, -1, -1):
+            if list(AET[j])[1] == y + y_min:
+                AET.pop(j)
+        # 添加NET表项
+        if len(NET[y]) > 0:
+            for net_tuple in NET[y]:
+                AET.append(net_tuple)
+        # 根据x排序
+        AET = sorted(AET, key=(lambda x: list(x)[0]))    
+        # 按x坐标对填充
+        for j in range(0, len(AET), 2):
+            x1 = int(list(AET[j])[0] + 0.5)
+            x2 = int(list(AET[j + 1])[0] + 0.5)
+            for x in range(x1, x2 + 1):
+                result.append([x, y + y_min])
+
+    return result
