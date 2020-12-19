@@ -118,7 +118,7 @@ def draw_line(p_list, algorithm):
                     result.append((x, y))
     return result
 
-
+'''
 def draw_rectangle(p_list, algorithm):
     """绘制矩形
 
@@ -139,22 +139,28 @@ def draw_rectangle(p_list, algorithm):
     result += draw_line([[x1, y1], [x1, y0]], algorithm)
     result += draw_line([[x1, y0], [x0, y0]], algorithm)
     return result
+'''
 
-
-def draw_polygon(p_list, algorithm):
+def draw_polygon(p_list, algorithm, label=True):
     """绘制多边形
 
     :param p_list: (list of list of int: [[x0, y0], [x1, y1], [x2, y2], ...]) 多边形的顶点坐标列表
     :param algorithm: (string) 绘制使用的算法，包括'DDA'和'Bresenham'
+    :param label: 是否绘制结束，用于确定gui显示效果
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 绘制结果的像素点坐标列表
     """
     result = []
-    for i in range(len(p_list)):
-        line = draw_line([p_list[i - 1], p_list[i]], algorithm)
-        result += line
+    if label:
+        for i in range(len(p_list)):
+            line = draw_line([p_list[i - 1], p_list[i]], algorithm)
+            result += line
+    else:
+        for i in range(1, len(p_list)):
+            line = draw_line([p_list[i - 1], p_list[i]], algorithm)
+            result += line
     return result
 
-
+'''
 def draw_polygon_gui(p_list, algorithm):
     """绘制多边形
 
@@ -167,6 +173,7 @@ def draw_polygon_gui(p_list, algorithm):
         line = draw_line([p_list[i - 1], p_list[i]], algorithm)
         result += line
     return result
+'''
 
 
 def draw_ellipse(p_list):
@@ -447,6 +454,8 @@ def polygon_fill(p_list):
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 绘制结果的像素点坐标列表
     """
     result = []
+    if len(p_list) < 3:
+        return result
     y_min = p_list[0][1]
     y_max = p_list[0][1]
     for x, y in p_list:
@@ -489,5 +498,118 @@ def polygon_fill(p_list):
             x2 = int(list(AET[j + 1])[0] + 0.5)
             for x in range(x1, x2 + 1):
                 result.append([x, y + y_min])
+
+    return result
+ 
+
+def get_intersection_pt(x1, y1, x2, y2, x=-1, y=-1, label=''):
+    '''获得线段和水平/垂直直线的交点
+
+    :param (x1, y1), (x2, y2): 线段端点
+    :param label: 'h'-水平, 'v'-垂直, 直线类型
+    :param x, y: 直线方程
+    :return: 交点坐标
+    '''
+    if label == 'h' and y > -1:
+        # 线段方程 y=kx+b
+        if x1 == x2:
+            return [x1, y]
+        else:
+            k = float(y2 - y1) / float(x2 - x1)
+            b = y1 - k * x1
+            return [int(float(y - b) / float(k) + 0.5), y]
+    elif label == 'v' and x > -1:
+        k = float(y2 - y1) / float(x2 - x1)
+        b = y1 - k * x1
+        return [x, int(k * x + b + 0.5)]
+    else:
+        return [-1, -1]
+
+
+def polygon_clip(p_list, x_min, y_min, x_max, y_max, algorithm):
+    """多边形裁剪
+
+    :param p_list: (list of list of int: [[x0, y0], [x1, y1], [x2, y2], ...]) 多边形的顶点坐标列表
+    :param algorithm: (string) 使用的裁剪算法，包括'Sutherland-Hodgman'和'Weiler-Atherton'
+    :return: (list of list of int: [[x0, y0], [x1, y1], [x2, y2], ...]) 裁剪后多边形的顶点坐标列表
+    """
+
+    if x_min > x_max:
+        x_min, x_max = x_max, x_min
+    if y_min > y_max:
+        y_min, y_max = y_max, y_min
+
+    if algorithm == 'Sutherland-Hodgman':
+        # TODO: 凹多边形？
+        # 左
+        temp_plist = p_list.copy()
+        result = []
+        for i in range(-1, len(temp_plist) - 1):
+            x1, y1 = temp_plist[i]
+            x2, y2 = temp_plist[i + 1]
+            f1 = (x1 >= x_min)
+            f2 = (x2 >= x_min)
+            if f1 and f2:
+                result.append([x2, y2])
+            elif f1 and not f2:
+                result.append(get_intersection_pt(x1, y1, x2, y2, x=x_min, label='v'))
+            elif not f1 and f2:
+                result.append(get_intersection_pt(x1, y1, x2, y2, x=x_min, label='v'))
+                result.append([x2, y2])
+            elif not f1 and not f2:
+                pass
+        # 右
+        temp_plist = result
+        result = []
+        for i in range(-1, len(temp_plist) - 1):
+            x1, y1 = temp_plist[i]
+            x2, y2 = temp_plist[i + 1]
+            f1 = (x1 <= x_max)
+            f2 = (x2 <= x_max)
+            if f1 and f2:
+                result.append([x2, y2])
+            elif f1 and not f2:
+                result.append(get_intersection_pt(x1, y1, x2, y2, x=x_max, label='v'))
+            elif not f1 and f2:
+                result.append(get_intersection_pt(x1, y1, x2, y2, x=x_max, label='v'))
+                result.append([x2, y2])
+            elif not f1 and not f2:
+                pass
+        # 上
+        temp_plist = result
+        result = []
+        for i in range(-1, len(temp_plist) - 1):
+            x1, y1 = temp_plist[i]
+            x2, y2 = temp_plist[i + 1]
+            f1 = (y1 <= y_max)
+            f2 = (y2 <= y_max)
+            if f1 and f2:
+                result.append([x2, y2])
+            elif f1 and not f2:
+                result.append(get_intersection_pt(x1, y1, x2, y2, y=y_max, label='h'))
+            elif not f1 and f2:
+                result.append(get_intersection_pt(x1, y1, x2, y2, y=y_max, label='h'))
+                result.append([x2, y2])
+            elif not f1 and not f2:
+                pass
+        # 下
+        temp_plist = result
+        result = []
+        for i in range(-1, len(temp_plist) - 1):
+            x1, y1 = temp_plist[i]
+            x2, y2 = temp_plist[i + 1]
+            f1 = (y1 >= y_min)
+            f2 = (y2 >= y_min)
+            if f1 and f2:
+                result.append([x2, y2])
+            elif f1 and not f2:
+                result.append(get_intersection_pt(x1, y1, x2, y2, y=y_min, label='h'))
+            elif not f1 and f2:
+                result.append(get_intersection_pt(x1, y1, x2, y2, y=y_min, label='h'))
+                result.append([x2, y2])
+            elif not f1 and not f2:
+                pass        
+    elif algorithm == 'Weiler-Atherton':
+        pass
 
     return result

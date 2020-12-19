@@ -122,6 +122,12 @@ class MyCanvas(QGraphicsView):
         self.temp_item = self.item_dict[self.selected_id]
         self.temp_plist = self.temp_item.p_list
 
+    def start_polygon_clip(self, algorithm):
+        self.status = 'polygon_clip'
+        self.temp_algorithm = algorithm
+        self.temp_item = self.item_dict[self.selected_id]
+        self.temp_plist = self.temp_item.p_list
+
     def start_fill(self):
         self.status = 'fill'
         self.temp_algorithm = ''
@@ -183,11 +189,17 @@ class MyCanvas(QGraphicsView):
                 x0, y0 = self.temp_item.p_list[0]
                 # TODO:
                 if math.sqrt((x - x0)** 2 + (y - y0)** 2) <= 10 and len(self.temp_item.p_list) >= 3:
-                    self.temp_item.p_list.append([x0, y0])
+                    #self.temp_item.p_list.append([x0, y0])
+                    self.temp_item.finished = True
                     self.item_dict[self.temp_id] = self.temp_item
                     #self.list_widget.addItem(self.temp_id)
                     self.finish_draw()
                 else:
+                    if len(self.temp_item.p_list) == 2:
+                        fx = (self.temp_item.p_list[0][0] == self.temp_item.p_list[1][0])
+                        fy = (self.temp_item.p_list[0][1] == self.temp_item.p_list[1][1])
+                        if fx and fy:
+                            self.temp_item.p_list.pop(0)
                     self.temp_item.p_list.append([x, y])
             else:
                 self.temp_item = MyItem(self.temp_id, self.status, [[x, y], [x, y]], self.temp_algorithm, color=self.color)
@@ -216,6 +228,8 @@ class MyCanvas(QGraphicsView):
             self.scale_end = [x, y]
         elif self.status == 'clip':
             self.temp_coordinate = [x, y]
+        elif self.status == 'polygon_clip':
+            self.temp_coordinate = [x, y]
         elif self.status == '':
             # TODO: status==?
             self.temp_item = self.main_window.scene.itemAt(pos, QTransform())
@@ -239,9 +253,11 @@ class MyCanvas(QGraphicsView):
                 x0, y0 = self.temp_item.p_list[0]
                 # TODO: 和鼠标点击中同步修改
                 if math.sqrt((x - x0)** 2 + (y - y0)** 2) <= 10 and len(self.temp_item.p_list) >= 4:
-                    self.temp_item.p_list[-1] = [x0, y0]
+                    self.temp_item.p_list.pop(len(self.temp_item.p_list) - 1)
+                    self.temp_item.finished = True
+                    #self.temp_item.p_list[-1] = [x0, y0]
                     self.item_dict[self.temp_id] = self.temp_item
-                    self.list_widget.addItem(self.temp_id)
+                    #.list_widget.addItem(self.temp_id)
                     self.finish_draw()
                 else:
                     self.temp_item.p_list[-1] = [x, y]
@@ -296,7 +312,10 @@ class MyCanvas(QGraphicsView):
         elif self.status == 'clip':
             # TODO: bug
             sx, sy = self.temp_coordinate
-            self.temp_item.p_list = alg.clip(self.temp_plist, min(sx, x), min(sy, y), max(sx, x), max(sy, y), self.temp_algorithm)
+            self.temp_item.p_list = alg.clip(self.temp_plist, sx, sy, x, y, self.temp_algorithm)
+        elif self.status == 'polygon_clip':
+            sx, sy = self.temp_coordinate
+            self.temp_item.p_list = alg.polygon_clip(self.temp_plist, sx, sy, x, y, self.temp_algorithm)
         elif self.status == '':
             pass
         self.updateScene([self.sceneRect()])
@@ -335,6 +354,9 @@ class MyCanvas(QGraphicsView):
         elif self.status == 'clip':
             self.item_dict[self.selected_id] = self.temp_item
             self.finish_edit()
+        elif self.status == 'polygon_clip':
+            self.item_dict[self.selected_id] = self.temp_item
+            self.finish_edit()
         elif self.status == '':
             pass
         super().mouseReleaseEvent(event)
@@ -368,28 +390,29 @@ class MyItem(QGraphicsItem):
         self.selected = False       # 是否被选中
         self.color = color          # 图元颜色
         self.fill = fill            # 是否填充
+        self.finished = False            # 是否绘制结束
 
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: Optional[QWidget] = ...) -> None:
         painter.setPen(self.color)
         if self.item_type == 'line':
             item_pixels = alg.draw_line(self.p_list, self.algorithm)
         elif self.item_type == 'rectangle':
-            item_pixels = alg.draw_rectangle(self.p_list, self.algorithm)
+            x1, y1 = self.p_list[0]
+            x2, y2 = self.p_list[1]
+            x_min = min(x1, x2)
+            x_max = max(x1, x2)
+            y_min = min(y1, y2)
+            y_max = max(y1, y2)
+            temp_plist = [[x_min, y_min], [x_min, y_max], [x_max, y_max], [x_max, y_min]]
+            item_pixels = alg.draw_polygon(temp_plist, self.algorithm, label=True)
             if self.fill:
-                x1, y1 = self.p_list[0]
-                x2, y2 = self.p_list[1]
-                x_min = min(x1, x2)
-                x_max = max(x1, x2)
-                y_min = min(y1, y2)
-                y_max = max(y1, y2)
-                temp_plist = [[x_min, y_min], [x_min, y_max], [x_max, y_max], [x_max, y_min]]
                 item_pixels += alg.polygon_fill(temp_plist)
         elif self.item_type == 'polygon':
-            item_pixels = alg.draw_polygon_gui(self.p_list, self.algorithm)
+            item_pixels = alg.draw_polygon(self.p_list, self.algorithm, label=self.finished)
             if self.fill:
-                temp_plist = self.p_list.copy()
-                temp_plist.pop(len(self.p_list) - 1)
-                item_pixels += alg.polygon_fill(temp_plist)
+                #temp_plist = self.p_list.copy()
+                #temp_plist.pop(len(self.p_list) - 1)
+                item_pixels += alg.polygon_fill(self.p_list)
         elif self.item_type == 'ellipse':
             item_pixels = alg.draw_ellipse(self.p_list)
         elif self.item_type == 'curve':
@@ -422,16 +445,20 @@ class MyItem(QGraphicsItem):
             h = max(y0, y1) - y
             return QRectF(x - 1, y - 1, w + 2, h + 2)
         elif self.item_type == 'polygon':
-            x0, y0 = self.p_list[0]
-            x1, y1 = self.p_list[0]
-            for x, y in self.p_list:
-                x0 = min(x0, x)
-                y0 = min(y0, y)
-                x1 = max(x1, x)
-                y1 = max(y1, y)
-            w = x1 - x0
-            h = y1 - y0
-            return QRectF(x0 - 1, y0 - 1, w + 2, h + 2)
+            if len(self.p_list)>0:
+                x0, y0 = self.p_list[0]
+                x1, y1 = self.p_list[0]
+                for x, y in self.p_list:
+                    x0 = min(x0, x)
+                    y0 = min(y0, y)
+                    x1 = max(x1, x)
+                    y1 = max(y1, y)
+                w = x1 - x0
+                h = y1 - y0
+                return QRectF(x0 - 1, y0 - 1, w + 2, h + 2)
+            else:
+                # TODO: 
+                return QRectF()
         elif self.item_type == 'ellipse':
             x0, y0 = self.p_list[0]
             x1, y1 = self.p_list[1]
@@ -567,6 +594,14 @@ class MainWindow(QMainWindow):
         clip_liang_barsky_act = clip_menu.addAction('Liang-Barsky')
         clip_btn.setMenu(clip_menu)
         fill_act = QAction('填充', self)
+        polygon_clip_btn = QToolButton()
+        polygon_clip_btn.setIcon(QIcon('./icon/clip.png'))
+        polygon_clip_btn.setToolTip('多边形裁剪')
+        polygon_clip_btn.setPopupMode(QToolButton.InstantPopup)
+        polygon_clip_menu = QMenu()
+        polygon_clip_sutherland_hodgman_act = polygon_clip_menu.addAction('Sutherland-Hodgman')
+        polygon_clip_weiler_atherton_act = polygon_clip_menu.addAction('Weiler-Atherton')
+        polygon_clip_btn.setMenu(polygon_clip_menu)
 
         toolbar.addAction(save_canvas_act)
         toolbar.addAction(reset_canvas_act)
@@ -583,6 +618,7 @@ class MainWindow(QMainWindow):
         toolbar.addAction(rotate_act)
         toolbar.addAction(scale_act)
         toolbar.addWidget(clip_btn)
+        toolbar.addWidget(polygon_clip_btn)
         toolbar.addAction(fill_act)
         
         # 连接信号和槽函数
@@ -607,6 +643,8 @@ class MainWindow(QMainWindow):
         scale_act.triggered.connect(self.scale_action)
         clip_cohen_sutherland_act.triggered.connect(self.clip_cohen_sutherland_action)
         clip_liang_barsky_act.triggered.connect(self.clip_liang_barsky_action)
+        polygon_clip_sutherland_hodgman_act.triggered.connect(self.polygon_clip_sutherland_hodgman_action)
+        polygon_clip_weiler_atherton_act.triggered.connect(self.polygon_clip_weiler_atherton_action)
         fill_act.triggered.connect(self.fill_action)
         
         # 设置主窗口的布局
@@ -791,6 +829,20 @@ class MainWindow(QMainWindow):
             if temp_item.item_type == 'line':
                 self.canvas_widget.start_clip('Liang-Barsky')
                 self.statusBar().showMessage('Liang-Barsky算法裁剪线段')
+
+    def polygon_clip_sutherland_hodgman_action(self):
+        if self.canvas_widget.selected_id:
+            temp_item = self.canvas_widget.item_dict[self.canvas_widget.selected_id]
+            if temp_item.item_type == 'rectangle' or temp_item.item_type == 'polygon':
+                self.canvas_widget.start_polygon_clip('Sutherland-Hodgman')
+                self.statusBar().showMessage('Sutherland-Hodgman算法裁剪多边形')
+
+    def polygon_clip_weiler_atherton_action(self):
+        if self.canvas_widget.selected_id:
+            temp_item = self.canvas_widget.item_dict[self.canvas_widget.selected_id]
+            if temp_item.item_type == 'rectangle' or temp_item.item_type == 'polygon':
+                self.canvas_widget.start_polygon_clip('Weiler-Atherton')
+                self.statusBar().showMessage('Weiler-Atherton算法裁剪多边形')
 
     def fill_action(self):
         if self.canvas_widget.selected_id:
