@@ -4,7 +4,6 @@
 # 本文件只允许依赖math库
 from math import *
 
-
 def draw_line(p_list, algorithm):
     """绘制线段
 
@@ -118,29 +117,6 @@ def draw_line(p_list, algorithm):
                     result.append((x, y))
     return result
 
-'''
-def draw_rectangle(p_list, algorithm):
-    """绘制矩形
-
-    :param p_list: (list of list of int: [[x0, y0], [x1, y1]]) 矩形对角顶点坐标
-    :param algorithm: (string) 绘制使用的算法，包括'DDA'和'Bresenham'
-    :return: (list of list of int: [[x_0, y_0], [x_1, y_1]]) 绘制结果的像素点坐标列表
-    """
-    result = []
-    x0, y0 = p_list[0]
-    x1, y1 = p_list[1]
-    if x1 < x0:
-        x0, x1 = x1, x0
-    if y1 < y0:
-        y0, y1 = y1, y0
-
-    result += draw_line([[x0, y0], [x0, y1]], algorithm)
-    result += draw_line([[x0, y1], [x1, y1]], algorithm)
-    result += draw_line([[x1, y1], [x1, y0]], algorithm)
-    result += draw_line([[x1, y0], [x0, y0]], algorithm)
-    return result
-'''
-
 def draw_polygon(p_list, algorithm, label=True):
     """绘制多边形
 
@@ -160,22 +136,6 @@ def draw_polygon(p_list, algorithm, label=True):
             result += line
     return result
 
-'''
-def draw_polygon_gui(p_list, algorithm):
-    """绘制多边形
-
-    :param p_list: (list of list of int: [[x0, y0], [x1, y1], [x2, y2], ...]) 多边形的顶点坐标列表
-    :param algorithm: (string) 绘制使用的算法，包括'DDA'和'Bresenham'
-    :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 绘制结果的像素点坐标列表
-    """
-    result = []
-    for i in range(1, len(p_list)):
-        line = draw_line([p_list[i - 1], p_list[i]], algorithm)
-        result += line
-    return result
-'''
-
-
 def draw_ellipse(p_list):
     """绘制椭圆（采用中点圆生成算法）
 
@@ -186,10 +146,14 @@ def draw_ellipse(p_list):
     result1 = []
     x0, y0 = p_list[0]
     x1, y1 = p_list[1]
+    if x0 > x1:
+        x0, x1 = x1, x0
+    if y0 > y1:
+        y0, y1 = y1, y0
     xc = int((x0 + x1) / 2 + 0.5)
     yc = int((y0 + y1) / 2 + 0.5)
     rx = int(abs((x1 - x0) / 2) + 0.5)
-    ry = int(abs((y0 - y1) / 2) + 0.5)
+    ry = int(abs((y1 - y0) / 2) + 0.5)
     c1 = rx * rx
     c2 = ry * ry
     # 区域1
@@ -217,14 +181,13 @@ def draw_ellipse(p_list):
         result1.append((-x + xc, -y + yc))
     return result1
 
-
 def deCasteljau(p_list, u):
     p = p_list
     n = len(p)
     x = -1
     y = -1
     if n < 2:
-        return x, y
+        return None
     while len(p) > 1:
         tmp = []
         for i in range(len(p) - 1):
@@ -232,23 +195,18 @@ def deCasteljau(p_list, u):
             y = (1 - u) * p[i][1] + u * p[i + 1][1]
             tmp.append([x, y])
         p = tmp
-    return p[0][0], p[0][1]
-    
+    return [p[0][0], p[0][1]]
 
-'''
-def BSpline(p_list, i, u):
-    # P_{i-k},..., P_{i}, k=3
-    u2 = u * u
-    u3 = u * u2
-    k1 = 1.0 / 6 * (1 - u) * (1 - u) * (1 - u)
-    k2 = 1.0 / 6 * (3 * u3 - 6 * u2 + 4)
-    k3 = 1.0 / 6 * (-3 * u3 + 3 * u2 + 3 * u + 1)
-    k4 = 1.0 / 6 * u3
-    x = k1 * p_list[i - 3][0] + k2 * p_list[i - 2][0] + k3 * p_list[i - 1][0] + k4 * p_list[i][0]
-    y = k1 * p_list[i - 3][1] + k2 * p_list[i - 2][1] + k3 * p_list[i - 1][1] + k4 * p_list[i][1]
-    return x, y
-'''
-
+def n_bezier(p_list):
+    # 任意控制点数生成Bezier曲线，不分裂
+    # 返回曲线上的点列表
+    total = 1000
+    result = []
+    for i in range(total + 1):
+        u = i / total       # 0<=u<=1
+        x, y = deCasteljau(p_list, u)
+        result.append((int(x + 0.5), int(y + 0.5)))
+    return result
 
 def deBooxCox(k, i, u):
     if k == 1:
@@ -259,8 +217,7 @@ def deBooxCox(k, i, u):
     else:
         return (u - i) / (k - 1) * deBooxCox(k - 1, i, u) + (i + k - u) / (k - 1) * deBooxCox(k - 1, i + 1, u)
 
-
-def draw_curve(p_list, algorithm):
+def draw_curve(p_list, algorithm, split=False):
     """绘制曲线
 
     :param p_list: (list of list of int: [[x0, y0], [x1, y1], [x2, y2], ...]) 曲线的控制点坐标列表
@@ -270,10 +227,21 @@ def draw_curve(p_list, algorithm):
     result = []
     total = 1000
     if algorithm == 'Bezier':
-        for i in range(total + 1):  # u=0开始？
-            u = i / total
-            x, y = deCasteljau(p_list, u)
-            result.append((int(x + 0.5), int(y + 0.5)))
+        if not split or len(p_list) <= 3:
+            # 用于命令行
+            result = n_bezier(p_list)
+        else:
+            # 二次曲线拼接
+            pt0 = p_list[0]
+            pt1 = p_list[1]
+            pt2 = p_list[2]
+            result += n_bezier([pt0, pt1, pt2])
+            # 生成各段曲线控制点，一阶连续性
+            for i in range(3, len(p_list)):
+                pt0 = pt2
+                pt1 = [2 * pt2[0] - pt1[0], 2 * pt2[1] - pt1[1]]
+                pt2 = p_list[i]
+                result += n_bezier([pt0, pt1, pt2])
     elif algorithm == 'B-spline':
         total = 1000
         n = len(p_list) - 1     # n+1个顶点
@@ -290,7 +258,6 @@ def draw_curve(p_list, algorithm):
             u += 1.0 / total
     return result
 
-
 def translate(p_list, dx, dy):
     """平移变换
 
@@ -303,7 +270,6 @@ def translate(p_list, dx, dy):
     for x, y in p_list:
         result.append((x + dx, y + dy))
     return result
-
 
 def rotate(p_list, x, y, r):
     """旋转变换（除椭圆外）
@@ -325,7 +291,6 @@ def rotate(p_list, x, y, r):
         result.append((int(x2 + 0.5), int(y2 + 0.5)))
     return result
 
-
 def scale(p_list, x, y, s):
     """缩放变换
 
@@ -342,7 +307,6 @@ def scale(p_list, x, y, s):
         result.append((int(x2 + 0.5), int(y2 + 0.5)))
     return result
 
-
 def encode(x, y, x_min, y_min, x_max, y_max):
     LEFT = 1
     RIGHT = 2
@@ -358,7 +322,6 @@ def encode(x, y, x_min, y_min, x_max, y_max):
     if y > y_max:
         res |= UP
     return res
-
 
 def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
     """线段裁剪
@@ -446,7 +409,6 @@ def clip(p_list, x_min, y_min, x_max, y_max, algorithm):
 
     return result
 
-
 def polygon_fill(p_list):
     """填充多边形
 
@@ -500,8 +462,14 @@ def polygon_fill(p_list):
                 result.append([x, y + y_min])
 
     return result
- 
 
+class pvItem:
+    def __init__(self, x, y, v_type):
+        self.x = x
+        self.y = y
+        self.type = v_type  # 顶点类型，-1-多边形顶点, 0-如点, 1-出点
+        self.used = False
+    
 def get_intersection_pt(x1, y1, x2, y2, x=-1, y=-1, label=''):
     '''获得线段和水平/垂直直线的交点
 
@@ -523,24 +491,58 @@ def get_intersection_pt(x1, y1, x2, y2, x=-1, y=-1, label=''):
         b = y1 - k * x1
         return [x, int(k * x + b + 0.5)]
     else:
-        return [-1, -1]
+        return None
 
+def find_point_sequence(item, idx, pos, pv, cw, result):
+    # item: 当前点
+    # idx: 当前点下标
+    # pos: 当前数组
+    if pos == pv:
+        # 直到找到出点
+        for i in range(idx, idx + len(pv)):
+            k = i % len(pv)
+            pv[k].used = True
+            if pv[k].type != 1:    
+                result.append([pv[k].x, pv[k].y])
+            else:
+                for j in range(len(cw)):
+                    if cw[j].x == pv[k].x and cw[j].y == pv[k].y and cw[j].type == 1:
+                        break
+                find_point_sequence(cw[j], j, cw, pv, cw, result)
+                break
+    elif pos == cw:
+        # 直到找到入点
+        for i in range(idx, idx + len(cw)):
+            k = i % len(cw)
+            cw[k].used = True
+            if cw[k].type != 0:
+                result.append([cw[k].x, cw[k].y])
+            else:
+                sx, sy = result[0]
+                if sx == cw[k].x and sy == cw[k].y:
+                    return result
+                else:
+                    for j in range(len(pv)):
+                        if pv[j].x == cw[k].x and pv[j].y == cw[k].y and pv[j].type == 0:
+                            break
+                    find_point_sequence(pv[j], j, pv, pv, cw, result)
+                    break
 
 def polygon_clip(p_list, x_min, y_min, x_max, y_max, algorithm):
     """多边形裁剪
 
     :param p_list: (list of list of int: [[x0, y0], [x1, y1], [x2, y2], ...]) 多边形的顶点坐标列表
     :param algorithm: (string) 使用的裁剪算法，包括'Sutherland-Hodgman'和'Weiler-Atherton'
-    :return: (list of list of int: [[x0, y0], [x1, y1], [x2, y2], ...]) 裁剪后多边形的顶点坐标列表
+    :return: 裁剪后各多边形的顶点坐标列表
     """
 
+    result = []
     if x_min > x_max:
         x_min, x_max = x_max, x_min
     if y_min > y_max:
         y_min, y_max = y_max, y_min
 
     if algorithm == 'Sutherland-Hodgman':
-        # TODO: 凹多边形？
         # 左
         temp_plist = p_list.copy()
         result = []
@@ -608,8 +610,5 @@ def polygon_clip(p_list, x_min, y_min, x_max, y_max, algorithm):
                 result.append(get_intersection_pt(x1, y1, x2, y2, y=y_min, label='h'))
                 result.append([x2, y2])
             elif not f1 and not f2:
-                pass        
-    elif algorithm == 'Weiler-Atherton':
-        pass
-
+                pass
     return result
