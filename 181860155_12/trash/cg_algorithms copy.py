@@ -51,6 +51,7 @@ def draw_line(p_list, algorithm):
                     x = x + 1.0 / k
                     result.append((int(x + 0.5), y))
     elif algorithm == 'Bresenham':
+        # TODO: need further modification
         if x0 == x1:
             if y1 < y0:
                 y0, y1 = y1, y0
@@ -68,7 +69,7 @@ def draw_line(p_list, algorithm):
                 c3 = 2 * (dy + dx)
                 if m >= 0:
                     p = 2 * dy - dx
-                else:
+                else:   # ?
                     p = 2 * dy + dx
                 x, y = x0, y0
                 result.append((x, y))
@@ -96,7 +97,7 @@ def draw_line(p_list, algorithm):
                 c3 = 2 * (dx + dy)
                 if m >= 0:
                     p = 2 * dx - dy
-                else:
+                else:   # ?
                     p = 2 * dx + dy
                 x, y = x0, y0
                 result.append((x, y))
@@ -257,7 +258,9 @@ def rotate(p_list, x, y, r):
     :return: (list of list of int: [[x_0, y_0], [x_1, y_1], [x_2, y_2], ...]) 变换后的图元参数
     """
     result = []
+    # TODO: 角度转换
     s = -sin(radians(r))
+    #s = sin(radians(r))
     c = cos(radians(r))
     for x1, y1 in p_list:
         x2 = x + (x1 - x) * c - (y1 - y) * s
@@ -466,6 +469,41 @@ def get_intersection_pt(x1, y1, x2, y2, x=-1, y=-1, label=''):
         return [x, int(k * x + b + 0.5)]
     else:
         return None
+
+def find_point_sequence(item, idx, pos, pv, cw, result):
+    # item: 当前点
+    # idx: 当前点下标
+    # pos: 当前数组
+    if pos == pv:
+        # 直到找到出点
+        for i in range(idx, idx + len(pv)):
+            k = i % len(pv)
+            pv[k].used = True
+            if pv[k].type != 1:    
+                result.append([pv[k].x, pv[k].y])
+            else:
+                for j in range(len(cw)):
+                    if cw[j].x == pv[k].x and cw[j].y == pv[k].y and cw[j].type == 1:
+                        break
+                find_point_sequence(cw[j], j, cw, pv, cw, result)
+                break
+    elif pos == cw:
+        # 直到找到入点
+        for i in range(idx, idx + len(cw)):
+            k = i % len(cw)
+            cw[k].used = True
+            if cw[k].type != 0:
+                result.append([cw[k].x, cw[k].y])
+            else:
+                sx, sy = result[0]
+                if sx == cw[k].x and sy == cw[k].y:
+                    return result
+                else:
+                    for j in range(len(pv)):
+                        if pv[j].x == cw[k].x and pv[j].y == cw[k].y and pv[j].type == 0:
+                            break
+                    find_point_sequence(pv[j], j, pv, pv, cw, result)
+                    break
 
 def polygon_clip(p_list, x_min, y_min, x_max, y_max, algorithm):
     """多边形裁剪
